@@ -1,111 +1,97 @@
-# Conectividad en Juntas de Saneamiento con BFS
+# Búsqueda Primero en Anchura (BFS)
 
-## Objetivo
+Práctica básica de búsqueda no informada en Python aplicada a una Junta de Saneamiento.
 
-Este proyecto demuestra cómo una alerta puede recorrer una red hipotética de una Junta de Saneamiento usando búsqueda en anchura (BFS) en Python.
+## Problema
 
-## Problema representado
-
-Una posible rotura de cañería comienza en un punto de la red. El programa indica en qué orden se alcanza cada punto, a cuántas conexiones está del origen, la ruta más corta en cantidad de enlaces y los puntos aislados.
-
-## Topología S1-S7
-
-`S1 Tanque` conecta con `S2 Bomba` y `S3 Ramal Norte`; `S2` con `S4 Válvula Central` y `S5 Ramal Sur`; `S3` con `S6 Escuela Rural`; `S4` con `S7 Puesto de Salud`.
-
-## Cómo funciona BFS
-
-BFS visita primero los puntos más cercanos al origen. Usa una cola FIFO: el primer punto que entra es el primero que sale.
+Una rotura comienza en el tanque `S1`. Se necesita determinar en qué orden se propaga la alerta por los puntos conectados de la red de agua potable.
 
 ```text
-S1 → S2, S3 → S4, S5, S6 → S7
-     nivel 1    nivel 2     nivel 3
+S1 Tanque
+├── S2 Bomba
+│   ├── S4 Válvula Central
+│   │   └── S7 Puesto de Salud
+│   └── S5 Ramal Sur
+└── S3 Ramal Norte
+    └── S6 Escuela Rural
 ```
 
-Por eso, en una red sin pesos, la primera ruta encontrada tiene la menor cantidad de conexiones. No representa distancia física, presión, caudal ni una decisión operativa real.
+## Qué es BFS
 
-## Requisitos
+BFS (*Breadth-First Search*) es una búsqueda no informada: no usa costos ni estimaciones para elegir un camino. Recorre primero todos los puntos cercanos al origen y después avanza al siguiente nivel.
 
-Python 3.11 o superior. La aplicación usa únicamente la biblioteca estándar de Python: no requiere frameworks ni paquetes externos en tiempo de ejecución.
+Su flujo es:
 
-## Instalación
-
-```powershell
-python -m pip install -e .
+```text
+Agregar el origen a la cola
+          ↓
+Sacar el primer punto
+          ↓
+Visitar sus vecinos no recorridos
+          ↓
+Agregar esos vecinos al final de la cola
+          ↓
+Repetir hasta vaciar la cola
 ```
 
-Consulta la guía completa para principiantes: [docs/guia_paso_a_paso.md](docs/guia_paso_a_paso.md).
+La cola es FIFO: el primer elemento que entra es el primero que sale.
+
+## Propagación de la alerta
+
+```text
+Nivel 0: S1
+Nivel 1: S2, S3
+Nivel 2: S4, S5, S6
+Nivel 3: S7
+```
+
+Por lo tanto, el orden BFS es:
+
+```text
+S1 → S2 → S3 → S4 → S5 → S6 → S7
+```
+
+## Cómo está implementado
+
+Todo está en `bfs.py`:
+
+1. `RED` representa cada punto y sus conexiones mediante un diccionario.
+2. `deque` funciona como la cola FIFO.
+3. `visitados` evita recorrer un punto más de una vez.
+4. El ciclo `while` procesa la red nivel por nivel.
+5. La función `bfs` imprime cada etapa y devuelve el orden completo.
+
+Marcar un vecino como visitado antes de encolarlo evita duplicados cuando existen conexiones de ida y vuelta.
 
 ## Ejecución
 
-```powershell
-python -m junta_saneamiento
-python -m junta_saneamiento --origen S1 --destino S7
-python -m junta_saneamiento --red data/red_sensores.json --origen S3 --destino S7
-```
-
-## Escenarios didácticos
-
-Los escenarios crean variantes temporales en memoria. El archivo `data/red_sensores.json` no cambia.
+Requiere Python 3.10 o superior y no utiliza paquetes externos.
 
 ```powershell
-python -m junta_saneamiento --escenario rotura-tanque
-python -m junta_saneamiento --escenario rotura-toma-s8
-python -m junta_saneamiento --escenario toma-aislada
-python -m junta_saneamiento --escenario conexion-interrumpida
-python -m junta_saneamiento --escenario origen-inexistente
+python bfs.py
 ```
 
-También pueden llamarse directamente desde Python:
-
-```python
-from junta_saneamiento import simular_rotura_en_toma_s8
-
-escenario = simular_rotura_en_toma_s8()
-print(escenario.resultado.visit_order)
-print(escenario.ruta)
-```
-
-En este ejemplo la ruta es `S8 -> S5 -> S2 -> S4 -> S7`. Una “toma rota” sólo indica dónde se inicia la alerta simulada; el programa no detecta daños reales.
-
-## Ejemplo de salida
+Salida esperada:
 
 ```text
-Alerta: Posible rotura de cañería
-Origen: S1 - Tanque
+PROPAGACIÓN DE UNA ALERTA DE ROTURA
+
 Nivel 0: S1 - Tanque
-Nivel 1: S2 - Bomba, S3 - Ramal Norte
-Nivel 2: S4 - Válvula Central, S5 - Ramal Sur, S6 - Escuela Rural
+Nivel 1: S2 - Bomba | S3 - Ramal Norte
+Nivel 2: S4 - Valvula Central | S5 - Ramal Sur | S6 - Escuela Rural
 Nivel 3: S7 - Puesto de Salud
-Ruta a S7: S1 -> S2 -> S4 -> S7
-No alcanzables: ninguno
+
+Orden BFS:
+S1 -> S2 -> S3 -> S4 -> S5 -> S6 -> S7
 ```
 
-## Pruebas
+## Complejidad
 
-```powershell
-python -m unittest discover -s tests -v
-```
+- Tiempo: `O(V + E)`; se visitan todos los puntos y conexiones.
+- Memoria: `O(V)`; se guardan la cola y los puntos visitados.
 
-BFS usa `collections.deque`, marca un nodo antes de encolarlo, funciona en O(V + E) y devuelve rutas con la menor cantidad de conexiones. Las 13 pruebas verifican el algoritmo, la carga de datos, los cinco escenarios y la consola.
+`V` es la cantidad de puntos y `E` la cantidad de conexiones.
 
-## Diseño mínimo
+## Limitación
 
-- `network.py`: lee y valida el JSON.
-- `bfs.py`: contiene el algoritmo y reconstruye rutas.
-- `scenarios.py`: copia la red y aplica cambios temporales visibles.
-- `cli.py`: recibe argumentos y presenta el resultado.
-
-No hay clases, capas, dependencias ni abstracciones adicionales fuera de las necesarias para esas cuatro tareas.
-
-## Materiales de exposición
-
-- [Plan de ejecución actualizado](docs/entrega/Plan_Ejecucion_BFS_Junta_Saneamiento_Corregido.pdf)
-- [Presentación BFS de 5 minutos](docs/entrega/Presentacion_BFS_Junta_Saneamiento_5min.pptx)
-
-## Estructura del repositorio
-
-`data/` contiene la topología JSON; `src/junta_saneamiento/` contiene la carga, BFS, escenarios y CLI; `tests/` contiene las pruebas; y `docs/` explica arquitectura y casos manuales.
-
-## Limitaciones
-
-No integra dispositivos ni datos reales. No calcula presión, caudal, distancia ni tiempo hidráulico. Una ruta BFS minimiza conexiones, no una decisión técnica u operativa.
+La práctica muestra conectividad. No calcula distancia física, presión, caudal ni tiempo real de propagación.
