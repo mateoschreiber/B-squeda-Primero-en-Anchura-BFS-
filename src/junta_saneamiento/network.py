@@ -1,9 +1,9 @@
 """Carga y validación de la topología de la red."""
-from __future__ import annotations
-
 import json
 from dataclasses import dataclass
 from pathlib import Path
+
+DEFAULT_NETWORK_PATH = Path(__file__).resolve().parents[2] / "data" / "red_sensores.json"
 
 
 class NetworkConfigurationError(ValueError):
@@ -27,8 +27,6 @@ class Network:
 def load_network(path: str | Path) -> Network:
     try:
         raw = json.loads(Path(path).read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        raise
     except (OSError, json.JSONDecodeError) as error:
         raise NetworkConfigurationError(f"No se pudo leer la red: {error}") from error
     if not isinstance(raw, dict):

@@ -18,13 +18,17 @@ class BFSTests(unittest.TestCase):
     def test_cycle_and_other_origin(self):
         result = breadth_first_search(self.network, "S3")
         self.assertEqual(result.levels["S3"], 0)
-        cycle = Network("test", {"A": Node("A", "A", ""), "B": Node("B", "B", ""), "C": Node("C", "C", "")}, {"A": ("B", "C"), "B": ("A", "C"), "C": ("A", "B")})
+
+        nodes = {node: Node(node, node, "test") for node in "ABC"}
+        neighbors = {"A": ("B", "C"), "B": ("A", "C"), "C": ("A", "B")}
+        cycle = Network("test", nodes, neighbors)
         result = breadth_first_search(cycle, "A")
         self.assertEqual(result.visit_order, ["A", "B", "C"])
         self.assertEqual(len(result.visit_order), len(set(result.visit_order)))
 
     def test_isolated_node_and_invalid_origin(self):
-        isolated = Network("test", {"A": Node("A", "A", ""), "B": Node("B", "B", "")}, {"A": (), "B": ()})
+        nodes = {node: Node(node, node, "test") for node in "AB"}
+        isolated = Network("test", nodes, {"A": (), "B": ()})
         result = breadth_first_search(isolated, "A")
         self.assertEqual(result.unreachable, ["B"])
         self.assertIsNone(reconstruct_path(result, "B"))

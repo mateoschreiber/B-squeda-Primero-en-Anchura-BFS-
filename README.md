@@ -25,7 +25,7 @@ Por eso, en una red sin pesos, la primera ruta encontrada tiene la menor cantida
 
 ## Requisitos
 
-Python 3.11 o superior; no usa dependencias externas.
+Python 3.11 o superior. La aplicación usa únicamente la biblioteca estándar de Python: no requiere frameworks ni paquetes externos en tiempo de ejecución.
 
 ## Instalación
 
@@ -42,6 +42,30 @@ python -m junta_saneamiento
 python -m junta_saneamiento --origen S1 --destino S7
 python -m junta_saneamiento --red data/red_sensores.json --origen S3 --destino S7
 ```
+
+## Escenarios didácticos
+
+Los escenarios crean variantes temporales en memoria. El archivo `data/red_sensores.json` no cambia.
+
+```powershell
+python -m junta_saneamiento --escenario rotura-tanque
+python -m junta_saneamiento --escenario rotura-toma-s8
+python -m junta_saneamiento --escenario toma-aislada
+python -m junta_saneamiento --escenario conexion-interrumpida
+python -m junta_saneamiento --escenario origen-inexistente
+```
+
+También pueden llamarse directamente desde Python:
+
+```python
+from junta_saneamiento import simular_rotura_en_toma_s8
+
+escenario = simular_rotura_en_toma_s8()
+print(escenario.resultado.visit_order)
+print(escenario.ruta)
+```
+
+En este ejemplo la ruta es `S8 -> S5 -> S2 -> S4 -> S7`. Una “toma rota” sólo indica dónde se inicia la alerta simulada; el programa no detecta daños reales.
 
 ## Ejemplo de salida
 
@@ -62,7 +86,16 @@ No alcanzables: ninguno
 python -m unittest discover -s tests -v
 ```
 
-BFS usa `collections.deque`, marca un nodo antes de encolarlo, funciona en O(V + E) y devuelve rutas con la menor cantidad de conexiones. No calcula presión, caudal, distancia, tiempo hidráulico ni prioridades operativas. La topología es hipotética y no representa infraestructura real.
+BFS usa `collections.deque`, marca un nodo antes de encolarlo, funciona en O(V + E) y devuelve rutas con la menor cantidad de conexiones. Las 13 pruebas verifican el algoritmo, la carga de datos, los cinco escenarios y la consola.
+
+## Diseño mínimo
+
+- `network.py`: lee y valida el JSON.
+- `bfs.py`: contiene el algoritmo y reconstruye rutas.
+- `scenarios.py`: copia la red y aplica cambios temporales visibles.
+- `cli.py`: recibe argumentos y presenta el resultado.
+
+No hay clases, capas, dependencias ni abstracciones adicionales fuera de las necesarias para esas cuatro tareas.
 
 ## Materiales de exposición
 
@@ -71,12 +104,8 @@ BFS usa `collections.deque`, marca un nodo antes de encolarlo, funciona en O(V +
 
 ## Estructura del repositorio
 
-`data/` contiene la topología JSON; `src/junta_saneamiento/` contiene la carga, BFS y CLI; `tests/` contiene las pruebas; y `docs/` explica arquitectura y casos manuales.
+`data/` contiene la topología JSON; `src/junta_saneamiento/` contiene la carga, BFS, escenarios y CLI; `tests/` contiene las pruebas; y `docs/` explica arquitectura y casos manuales.
 
 ## Limitaciones
 
-No integra dispositivos ni datos reales. Una ruta BFS minimiza conexiones, no una decisión técnica u operativa.
-
-## Mejoras futuras
-
-Topología anonimizada, pesos con Dijkstra, eventos por API y visualización gráfica.
+No integra dispositivos ni datos reales. No calcula presión, caudal, distancia ni tiempo hidráulico. Una ruta BFS minimiza conexiones, no una decisión técnica u operativa.

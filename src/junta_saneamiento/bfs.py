@@ -1,6 +1,4 @@
 """Búsqueda en anchura independiente de la interfaz."""
-from __future__ import annotations
-
 from collections import deque
 from dataclasses import dataclass
 from .network import Network
